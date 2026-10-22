@@ -1,16 +1,18 @@
-
 package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
 
 func RunMigrations(
 	ctx context.Context,
@@ -26,9 +28,9 @@ func RunMigrations(
 		return fmt.Errorf("create migration table: %w", err)
 	}
 
-	files, err := os.ReadDir("migrations")
+	files, err := fs.ReadDir(migrationFiles, "migrations")
 	if err != nil {
-		return fmt.Errorf("read migrations directory: %w", err)
+		return fmt.Errorf("read embedded migrations: %w", err)
 	}
 
 	var names []string
@@ -61,10 +63,11 @@ func RunMigrations(
 			continue
 		}
 
-		path := filepath.Join("migrations", name)
-		sqlBytes, err := os.ReadFile(path)
+		path := "migrations/" + name
+
+		sqlBytes, err := migrationFiles.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("read migration %s: %w", name, err)
+			return fmt.Errorf("read embedded migration %s: %w", name, err)
 		}
 
 		tx, err := pool.Begin(ctx)
