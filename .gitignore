@@ -1,0 +1,11 @@
+
+.env
+.env.*
+!.env.example
+
+.air/
+tmp/
+bin/
+
+*.exe
+*.test
